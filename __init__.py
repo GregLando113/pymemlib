@@ -1039,6 +1039,11 @@ class ProcessDebugger(object):
         pass
 
 
+class CallBuffer(object):
+
+    def __init__(self, *data):
+        self.data = b''.join(data)
+
 class ProcessCaller(object):
 
     '''
@@ -1118,8 +1123,18 @@ class ProcessCaller(object):
 
     def fastcall(self, address, *argtypes):
         def _fn(*args):
-            cargs = [v(args[i]) for i, v in enumerate(argtypes)]
-            data = b''.join([LPVOID(address), *cargs])
+            cargs = [LPVOID(address)]
+            buffer = self._stackbuffer
+            for i, v in enumerate(argtypes):
+                if v is CallBuffer:
+                    d = b''.join(args[i])
+                    self.process.write(buffer, d)
+                    cargs.append(LPVOID(buffer))
+                    buffer += len(d)
+                else:
+                    cargs.append(v(args[i]))
+
+            data = b''.join(cargs)
             ptr = self._stackbuffer + self._stack_size - max(len(data),0x10)
             self.process.write(ptr, data)
             self.process.spawn_thread(self._fastcall, ptr).resume()
