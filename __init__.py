@@ -1050,7 +1050,7 @@ class ProcessCaller(object):
       stdcall:
             push ebp
             mov ebp, esp
-            mov esp, dword[esp+4]
+            mov esp, dword[esp+8]
             pop eax
             call eax
             xor eax, eax
@@ -1063,7 +1063,7 @@ class ProcessCaller(object):
         fastcall:
             push ebp
             mov ebp, esp
-            mov esp, dword[esp+4]
+            mov esp, dword[esp+8]
             pop eax
             pop ecx
             pop edx
