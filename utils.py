@@ -2,12 +2,12 @@ from ctypes import (
     c_char as CHAR
 )
 
-def _create_buffer(size):
+def create_buffer(size):
     """Create a ctypes buffer of a given size."""
     buftype = CHAR * size
     return buftype()
 
-def _get_ctype_string(type):
+def get_ctype_string(type):
     """Returns the type string to be used with unpack/pack"""
     from ctypes import _SimpleCData
 

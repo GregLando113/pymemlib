@@ -1,4 +1,11 @@
 from . import win32
+from . import utils
+from ctypes import (
+    byref
+)
+import struct
+from ctypes.wintypes import *
+from .thread import ProcessThread
 
 class Process(object):
     """
@@ -63,7 +70,7 @@ class Process(object):
     def read(self, addr, format="I"):
         """Reads in remote process at given address and return the given format."""
         size = struct.calcsize(format)
-        buffer = _create_buffer(size)
+        buffer = utils.create_buffer(size)
         success = win32.ReadProcessMemory(self.handle, addr, byref(buffer), size, None)
         if not success:
             raise win32.Win32Exception()
@@ -92,7 +99,7 @@ class Process(object):
     @property
     def threads(self):
         """Returns the ProcessThread's list of the process."""
-        buffer = _THREADENTRY32()
+        buffer = win32.THREADENTRY32()
         snap = win32.CreateToolhelp32Snapshot(_TH32CS_SNAPTHREAD, self.id)
         if not snap:
             raise win32.Win32Exception()

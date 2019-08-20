@@ -1,3 +1,6 @@
+from . import win32
+from ctypes.wintypes import *
+
 class CallBuffer(object):
 
     def __init__(self, *data):
