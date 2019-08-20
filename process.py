@@ -7,6 +7,11 @@ import struct
 from ctypes.wintypes import *
 from .thread import ProcessThread
 
+from .function_caller import (
+    CallBuffer,
+    ProcessCaller
+)
+
 class Process(object):
     """
     An object to interact with a Win32 remote process.
@@ -22,6 +27,8 @@ class Process(object):
     def __init__(self, pid, right=win32.PROCESS_ALL_ACCESS):
         self.id = pid
         self.handle = win32.OpenProcess(right, False, pid)
+
+        self._fncaller = None
         if not self.handle:
             raise Win32Exception()
 
@@ -175,6 +182,26 @@ class Process(object):
         if not handle:
             raise win32.Win32Exception()
         return ProcessThread(id, self, handle)
+
+    # caller methods for convenience
+    
+    def x64call(self, address, *argtypes):
+        assert win32.PROCESS_IS_64_BITS
+        if self._fncaller is None:
+            self._fncaller = ProcessCaller(self)
+        return self._fncaller.x64call(address, *argtypes)
+
+    def fastcall(self, address, *argtypes):
+        assert not win32.PROCESS_IS_64_BITS
+        if self._fncaller is None:
+            self._fncaller = ProcessCaller(self)
+        return self._fncaller.fastcall(address, *argtypes)
+
+    def stdcall(self, address, *argtypes):
+        assert not win32.PROCESS_IS_64_BITS
+        if self._fncaller is None:
+            self._fncaller = ProcessCaller(self)
+        return self._fncaller.stdcall(address, *argtypes)
 
     @classmethod
     def from_name(cls, name):

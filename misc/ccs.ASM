@@ -1,7 +1,7 @@
-stdcall:
+stdcall: ; also does cdecl since we use a fake stack
         push ebp
         mov ebp, esp
-        mov esp, dword[esp+4]
+        mov esp, dword[esp+8]
         pop eax
         call eax
         xor eax, eax
@@ -12,7 +12,7 @@ stdcall:
 fastcall:
         push ebp
         mov ebp, esp
-        mov esp, dword[esp+4]
+        mov esp, dword[esp+8]
         pop eax
         pop ecx
         pop edx
