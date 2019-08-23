@@ -7,6 +7,9 @@ import struct
 from ctypes.wintypes import *
 from .thread import ProcessThread
 
+from .memory import (
+    SharedMemBuffer
+)
 from .function_caller import (
     CallBuffer,
     ProcessCaller

@@ -398,6 +398,8 @@ GetLastError.argtypes = []
 GetLastError.restype = DWORD
 WaitForSingleObject = kernel32.WaitForSingleObject
 
+kernel32.MapViewOfFile.restype = LPVOID
+
 OpenProcess = kernel32.OpenProcess
 OpenProcess.argtypes = [DWORD, BOOL, DWORD]
 OpenProcess.restype = HANDLE

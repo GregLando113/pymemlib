@@ -1,4 +1,5 @@
 from . import win32
+import ctypes as c
 
 class SharedMemBuffer(object):
     def __init__(self, process, size, name=None):
@@ -31,15 +32,15 @@ class SharedMemBuffer(object):
         if not self.base_local:
             raise RuntimeError("Local mapping failed, err ", win32.kernel32.GetLastError())
 
-        baddrbuf = c_void_p()
+        baddrbuf = win32.LPVOID()
         ntresult = win32.ntdll.NtMapViewOfSection(
             self.map_handle,
             self.process.handle,
-            byref(baddrbuf),
+            c.byref(baddrbuf),
             None,
             None,
-            byref(c_longlong()),
-            byref(c_ulong()),
+            c.byref(win32.LARGE_INTEGER()),
+            c.byref(win32.ULONG()),
             2,  # ViewUnmap(2) :  do not map into child processes
             None,
             0x40
