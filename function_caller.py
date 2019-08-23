@@ -76,9 +76,18 @@ class ProcessCaller(object):
 
     def x64call(self, address, *argtypes):
         def _fn(*args):
-            cargs = [v(args[i]) for i, v in enumerate(argtypes)]
-            data = b''.join([LPVOID(address), *cargs])
-            ptr = self._stackbuffer + self._stack_size - max(len(data),0x40)
+            cargs = [LPVOID(address)]
+            buffer = self._stackbuffer
+            for i, v in enumerate(argtypes):
+                if v is CallBuffer:
+                    d = b''.join(args[i])
+                    self.process.write(buffer, d)
+                    cargs.append(LPVOID(buffer))
+                    buffer += len(d)
+                else:
+                    cargs.append(v(args[i]))
+            data = b''.join(cargs)
+            ptr = self._stackbuffer + self._stack_size - max(len(data),0x38)
             self.process.write(ptr, data)
             self.process.spawn_thread(self._x64call, ptr).resume()
         return _fn
@@ -95,7 +104,6 @@ class ProcessCaller(object):
                     buffer += len(d)
                 else:
                     cargs.append(v(args[i]))
-
             data = b''.join(cargs)
             ptr = self._stackbuffer + self._stack_size - max(len(data),0x10)
             self.process.write(ptr, data)
