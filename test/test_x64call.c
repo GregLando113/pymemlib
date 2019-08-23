@@ -7,7 +7,7 @@ int add(int a1, int a2) {
     return res;
 }
 
-int main(int argc, char** argv) 
+int main(void) 
 {
     char buffer[0x100];
 
