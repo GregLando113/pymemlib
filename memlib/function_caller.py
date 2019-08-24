@@ -57,9 +57,9 @@ class ProcessCaller(object):
 
     def __init__(self,proc,stack_size=0x100000):
         self.process = proc
-        self._stdcall = proc.mmap(len(_stdcall_code) + len(_fastcall_code) + len(_x64call_code))
-        self._fastcall = self._stdcall + len(_stdcall_code)
-        self._x64call = self._fastcall + len(_fastcall_code)
+        self._stdcall = proc.mmap(len(ProcessCaller._stdcall_code) + len(ProcessCaller._fastcall_code) + len(ProcessCaller._x64call_code))
+        self._fastcall = self._stdcall + len(ProcessCaller._stdcall_code)
+        self._x64call = self._fastcall + len(ProcessCaller._fastcall_code)
 
         proc.write(self._stdcall, ProcessCaller._stdcall_code)
         proc.write(self._fastcall, ProcessCaller._fastcall_code)
@@ -76,55 +76,62 @@ class ProcessCaller(object):
     def x64call(self, address, *argtypes):
         def _fn(*args):
             cargs = [LPVOID(address)]
-            buffer = self._stackbuffer
+            offset = 0
             for i, v in enumerate(argtypes):
                 if v is CallBuffer:
+                    base = offset
                     d = b''.join(args[i])
-                    self.process.write(buffer, d)
-                    cargs.append(LPVOID(buffer))
-                    buffer += len(d)
+                    offset += len(d)
+                    self.stack[base:offset] = list(d)
+                    cargs.append(LPVOID(self._stackbuffer.base_remote + base))
                 else:
                     cargs.append(v(args[i]))
             data = b''.join(cargs)
-            offset = self._stack_size - max(len(data),0x38)
-            ptr = self._stackbuffer.base_remote + offset
-            self.stack[offset:] = list(data)
+            base = self._stack_size - max(len(data),0x38)
+            offset = base + len(data)
+            ptr = self._stackbuffer.base_remote + base
+            self.stack[base:offset] = list(data)
             self.process.spawn_thread(self._x64call, ptr).resume()
         return _fn
 
     def fastcall(self, address, *argtypes):
         def _fn(*args):
             cargs = [LPVOID(address)]
-            buffer = self._stackbuffer
+            offset = 0
             for i, v in enumerate(argtypes):
                 if v is CallBuffer:
+                    base = offset
                     d = b''.join(args[i])
-                    self.process.write(buffer, d)
-                    cargs.append(LPVOID(buffer))
-                    buffer += len(d)
+                    offset += len(d)
+                    self.stack[base:offset] = list(d)
+                    cargs.append(LPVOID(self._stackbuffer.base_remote + base))
                 else:
                     cargs.append(v(args[i]))
             data = b''.join(cargs)
-            offset = self._stack_size - max(len(data),0x10)
-            ptr = self._stackbuffer.base_remote + offset
-            self.stack[offset:] = list(data)
+            base = self._stack_size - max(len(data),0x38)
+            offset = base + len(data)
+            ptr = self._stackbuffer.base_remote + base
+            self.stack[base:offset] = list(data)
             self.process.spawn_thread(self._fastcall, ptr).resume()
         return _fn
 
     def stdcall(self, address, *argtypes):
         def _fn(*args):
             cargs = [LPVOID(address)]
-            buffer = self._stackbuffer
+            offset = 0
             for i, v in enumerate(argtypes):
                 if v is CallBuffer:
+                    base = offset
                     d = b''.join(args[i])
-                    self.process.write(buffer, d)
-                    cargs.append(LPVOID(buffer))
-                    buffer += len(d)
+                    offset += len(d)
+                    self.stack[base:offset] = list(d)
+                    cargs.append(LPVOID(self._stackbuffer.base_remote + base))
                 else:
                     cargs.append(v(args[i]))
             data = b''.join(cargs)
-            ptr = self._stackbuffer + self._stack_size - max(len(data),0x8)
-            self.process.write(ptr, data)
+            base = self._stack_size - max(len(data),0x38)
+            offset = base + len(data)
+            ptr = self._stackbuffer.base_remote + base
+            self.stack[base:offset] = list(data)
             self.process.spawn_thread(self._stdcall, ptr).resume()
         return _fn
