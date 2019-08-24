@@ -1,5 +1,6 @@
 from . import win32
 from ctypes.wintypes import *
+import ctypes as c
 
 class CallBuffer(object):
 
@@ -56,23 +57,21 @@ class ProcessCaller(object):
 
     def __init__(self,proc,stack_size=0x100000):
         self.process = proc
-        self._stdcall = proc.mmap(0x20)
-        self._fastcall = proc.mmap(0x20)
-        self._x64call = proc.mmap(0x20)
+        self._stdcall = proc.mmap(len(_stdcall_code) + len(_fastcall_code) + len(_x64call_code))
+        self._fastcall = self._stdcall + len(_stdcall_code)
+        self._x64call = self._fastcall + len(_fastcall_code)
 
         proc.write(self._stdcall, ProcessCaller._stdcall_code)
         proc.write(self._fastcall, ProcessCaller._fastcall_code)
         proc.write(self._x64call, ProcessCaller._x64call_code)
 
         self._stack_size = stack_size
-        self._stackbuffer = proc.mmap(stack_size)
+        self._stackbuffer = proc.mapshared(stack_size)
+        self.stack = (BYTE * stack_size).from_address(self._stackbuffer.base_local)
 
     def __del__(self):
         self.process.unmap(self._stdcall)
-        self.process.unmap(self._fastcall)
-        self.process.unmap(self._x64call)
-        self.process.unmap(self._stackbuffer)
-
+        self._stackbuffer = None
 
     def x64call(self, address, *argtypes):
         def _fn(*args):
@@ -87,8 +86,9 @@ class ProcessCaller(object):
                 else:
                     cargs.append(v(args[i]))
             data = b''.join(cargs)
-            ptr = self._stackbuffer + self._stack_size - max(len(data),0x38)
-            self.process.write(ptr, data)
+            offset = self._stack_size - max(len(data),0x38)
+            ptr = self._stackbuffer.base_remote + offset
+            self.stack[offset:] = list(data)
             self.process.spawn_thread(self._x64call, ptr).resume()
         return _fn
 
@@ -105,15 +105,25 @@ class ProcessCaller(object):
                 else:
                     cargs.append(v(args[i]))
             data = b''.join(cargs)
-            ptr = self._stackbuffer + self._stack_size - max(len(data),0x10)
-            self.process.write(ptr, data)
+            offset = self._stack_size - max(len(data),0x10)
+            ptr = self._stackbuffer.base_remote + offset
+            self.stack[offset:] = list(data)
             self.process.spawn_thread(self._fastcall, ptr).resume()
         return _fn
 
     def stdcall(self, address, *argtypes):
         def _fn(*args):
-            cargs = [v(args[i]) for i, v in enumerate(argtypes)]
-            data = b''.join([LPVOID(address), *cargs])
+            cargs = [LPVOID(address)]
+            buffer = self._stackbuffer
+            for i, v in enumerate(argtypes):
+                if v is CallBuffer:
+                    d = b''.join(args[i])
+                    self.process.write(buffer, d)
+                    cargs.append(LPVOID(buffer))
+                    buffer += len(d)
+                else:
+                    cargs.append(v(args[i]))
+            data = b''.join(cargs)
             ptr = self._stackbuffer + self._stack_size - max(len(data),0x8)
             self.process.write(ptr, data)
             self.process.spawn_thread(self._stdcall, ptr).resume()
