@@ -1,7 +1,8 @@
 from . import win32
 from . import utils
 from ctypes import (
-    byref
+    byref,
+    sizeof
 )
 import struct
 from ctypes.wintypes import *
@@ -13,6 +14,10 @@ from .memory import (
 from .function_caller import (
     CallBuffer,
     ProcessCaller
+)
+
+from .module import (
+    ProcessModule
 )
 
 class Process(object):
@@ -175,7 +180,7 @@ class Process(object):
             buffer = win32.MEMORY_BASIC_INFORMATION()
         else:
             buffer = win32.MEMORY_BASIC_INFORMATION64()
-        _VirtualQueryEx(self.handle, addr, byref(buffer), sizeof(buffer))
+        win32.VirtualQueryEx(self.handle, addr, byref(buffer), sizeof(buffer))
         return buffer.RegionSize, buffer.Protect
 
     def spawn_thread(self, entry, param=None):

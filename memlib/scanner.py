@@ -12,7 +12,7 @@ class ProcessScanner(object):
         # Very hacky but that will do it for now
         self.base = self.module.base + 0x1000
         size, _ = proc.page_info(self.base)
-        self.buffer, = proc.read(self.base, "%ds" % size)
+        self.buffer = proc.read(self.base, "%ds" % size)
 
     def find(self, pattern, offset=0):
         """Returns address of the pattern if found."""
