@@ -11,3 +11,4 @@ from .scanner import *
 from .thread  import *
 from .memory  import *
 from .function_caller import *
+from .remote_class import *
