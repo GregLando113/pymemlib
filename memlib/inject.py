@@ -1,4 +1,4 @@
-
+from . import win32
 
 def InjectDll(proc, name):
     """Inject a dll with CreateRemoteThread in the remote process"""
@@ -6,12 +6,12 @@ def InjectDll(proc, name):
     class InjectionError(RuntimeError):
         pass
         
-    kernel32 = _GetModuleHandleA(b"kernel32")
+    kernel32 = win32.GetModuleHandleA(b"kernel32")
     if not kernel32:
-        raise Win32Exception()
-    LoadLibraryEx = _GetProcAddress(kernel32, b"LoadLibraryA")
+        raise win32.Win32Exception()
+    LoadLibraryEx = win32.GetProcAddress(kernel32, b"LoadLibraryA")
     if not LoadLibraryEx:
-        raise Win32Exception()
+        raise win32.Win32Exception()
     size = len(name) + 1
     path = proc.mmap(size)
     if not path:
@@ -24,16 +24,13 @@ def InjectDll(proc, name):
     return retval
 
 def EjectDll(proc, handle):
-    kernel32 = _GetModuleHandleA(b"kernel32")
+    kernel32 = win32.GetModuleHandleA(b"kernel32")
     if not kernel32:
-        raise Win32Exception()
-    FreeLibraryEx = _GetProcAddress(kernel32, b"FreeLibraryA")
+        raise win32.Win32Exception()
+    FreeLibraryEx = win32.GetProcAddress(kernel32, b"FreeLibraryA")
     if not FreeLibraryEx:
-        raise Win32Exception()
+        raise win32.Win32Exception()
     thread = proc.spawn_thread(FreeLibraryEx, handle)
     thread.resume()
     retval = thread.join()
 
-
-if __name__ == '__main__':
-    pass

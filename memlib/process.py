@@ -20,6 +20,9 @@ from .module import (
     ProcessModule
 )
 
+ModuleNotFoundError = RuntimeError
+ProcessNotFoundError = RuntimeError
+
 class Process(object):
     """
     An object to interact with a Win32 remote process.
@@ -132,7 +135,7 @@ class Process(object):
         """Returns the ProcessModule's list of the process."""
         buffer = win32.MODULEENTRY32()
         snapshot = win32.CreateToolhelp32Snapshot(
-            _TH32CS_SNAPMODULE | _TH32CS_SNAPMODULE32, self.id
+            win32.TH32CS_SNAPMODULE | win32.TH32CS_SNAPMODULE32, self.id
         )
         if not snapshot:
             raise Win32Exception()
@@ -166,7 +169,7 @@ class Process(object):
                 win32.CloseHandle(snapshot)
                 return ProcessModule.from_MODULEENTRY32(buffer, self)
 
-        raise RuntimeError("No process module with the given name was found.")
+        raise ModuleNotFoundError("No process module with the given name was found.")
 
     def is_x64(self):
         m = self.module()
@@ -216,7 +219,7 @@ class Process(object):
         """Creates a Process from his name."""
         processes = GetProcesses(name)
         if not len(processes):
-            raise RuntimeError("No process with the given name was found.")
+            raise ProcessNotFoundError("No process with the given name was found.")
         return processes[0]
 
 
