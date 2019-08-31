@@ -20,8 +20,12 @@ from .module import (
     ProcessModule
 )
 
-ModuleNotFoundError = RuntimeError
-ProcessNotFoundError = RuntimeError
+
+class ModuleNotFoundError(RuntimeError):
+    pass
+
+class ProcessNotFoundError(RuntimeError):
+    pass
 
 class Process(object):
     """

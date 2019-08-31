@@ -1,4 +1,10 @@
 from . import win32
+from . import utils
+from contextlib import suppress
+from ctypes import (
+    byref
+)
+from .thread import ProcessThread
 
 class Hook(object):
     """
@@ -39,7 +45,7 @@ class Hook(object):
         self.callconv = callconv
         self.argtypes = argtypes
 
-        self.argstr = "".join(_get_ctype_string(arg) for arg in argtypes)
+        self.argstr = "".join(utils.get_ctype_string(arg) for arg in argtypes)
         self.extargs = []
 
     def __hash__(self):
@@ -153,7 +159,7 @@ class ProcessDebugger(object):
         with suppress(Exception):
             for hook in self.hooks.values():
                 hook.disable()
-        _DebugActiveProcessStop(self.proc.id)
+        win32.DebugActiveProcessStop(self.proc.id)
         self.attached = False
 
     def run(self, **kw):
@@ -168,7 +174,7 @@ class ProcessDebugger(object):
             return
 
         if evt.dwProcessId != self.proc.id:
-             win32.ContinueDebugEvent(
+            win32.ContinueDebugEvent(
                 evt.dwProcessId, evt.dwThreadId,  win32.DBG_EXCEPTION_NOT_HANDLED
             )
             return
@@ -198,7 +204,7 @@ class ProcessDebugger(object):
         elif event_code == win32.RIP_EVENT:
             self.OnRipEvent(evt.u.RipInfo)
 
-        _ContinueDebugEvent(evt.dwProcessId, evt.dwThreadId, continue_status)
+        win32.ContinueDebugEvent(evt.dwProcessId, evt.dwThreadId, continue_status)
 
     def _on_single_step(self, thread, addr):
         hook = self.ss_hook
@@ -206,7 +212,7 @@ class ProcessDebugger(object):
             return win32.DBG_EXCEPTION_NOT_HANDLED
 
         hook.enable()
-        return _DBG_CONTINUE
+        return win32.DBG_CONTINUE
 
     def _on_breakpoint(self, thread, addr):
         proc_hook = self.hooks.get(addr, None)
